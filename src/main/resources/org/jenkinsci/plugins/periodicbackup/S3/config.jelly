@@ -26,8 +26,7 @@
   S3 config page
 -->
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:c="/lib/credentials" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-
+<j:jelly xmlns:j="jelly:core" xmlns:f="lib/form">
     <f:entry title="${%backupS3Bucket.title}" field="bucket">
         <f:textbox/>
     </f:entry>
@@ -49,5 +48,9 @@
             method="testBucket" with="bucket,region,credentialsId"/>
     <f:entry title="${%tmpDir.title}" field="tmpDir">
         <f:textbox default="/tmp/s3backup"/>
+    </f:entry>
+    <f:entry title="${%endpoint.title}" field="endpoint">
+        <f:textbox />
+        <f:help file="help-endpoint.html" />
     </f:entry>
 </j:jelly>

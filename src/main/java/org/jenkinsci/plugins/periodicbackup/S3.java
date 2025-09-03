@@ -24,8 +24,13 @@
 
 package org.jenkinsci.plugins.periodicbackup;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
@@ -62,29 +67,34 @@ import java.util.logging.Logger;
 /**
  * S3 defines Amazon S3 (Simple Storage Service) to store the backup files
  */
-public class S3 extends Location {
-
-    private String bucket;
-    private String prefix;
-    private String tmpDir;
-    private String region;
-    private String credentialsId;
+public class S3 extends Storage {
+    private final String accessKey;
+    private final String secretKey;
+    private final String bucketName;
+    private final String endpoint; // Add this field
 
     private static final Logger LOGGER = Logger.getLogger(S3.class.getName());
 
     @DataBoundConstructor
-    public S3(String bucket, boolean enabled, String tmpDir, String region, String credentialsId) {
-        super(enabled);
-        this.bucket = bucket;
-        this.setTmpDir(tmpDir);
-        this.setRegion(region);
-        this.setCredentialsId(credentialsId);
+    public S3(String accessKey, String secretKey, String bucketName, String endpoint) {
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+        this.bucketName = bucketName;
+        this.endpoint = endpoint;
+    }
+
+    private AmazonS3 getS3Client() {
+        AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)));
+        if (endpoint != null && !endpoint.isEmpty()) {
+            builder.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, "us-east-1"));
+        }
+        return builder.build();
     }
 
     @Override
     public Iterable<BackupObject> getAvailableBackups() {
-        AmazonS3 client = AmazonUtil.getAmazonS3Client(region, credentialsId);
-
+        AmazonS3 client = getS3Client();
         List<S3ObjectSummary> objectSummarys = getObjectSummaries(client);
         return objectSummarys
                 .parallelStream()
